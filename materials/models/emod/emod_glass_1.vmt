@@ -1,0 +1,7 @@
+"VertexlitGeneric"
+{
+	"$basetexture" "models/emod/emod_glass_1"
+	"$surfaceprop" "glass"
+	"$additive" "1"
+
+}

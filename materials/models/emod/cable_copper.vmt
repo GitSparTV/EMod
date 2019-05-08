@@ -1,0 +1,6 @@
+"Cable"
+{
+	"$basetexture"		"models/emod/cable_copper"
+	"$bumpmap"		"cable\cablenormalmap"
+
+}

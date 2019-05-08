@@ -1,0 +1,6 @@
+"VertexlitGeneric"
+{
+	"$basetexture" "models/emod/emod_plastic_1_1"
+	"$bumpmap" "models/emod/emod_plastic_1_bump"
+	"$normalmapalphaenvmapmask" "1"
+}

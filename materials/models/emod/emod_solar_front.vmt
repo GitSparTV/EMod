@@ -1,0 +1,7 @@
+"VertexLitGeneric"
+{
+	"$basetexture" "models/emod/emod_solar_front"
+	$envmap env_cubemap
+	"$bumpmap" "models/emod/emod_solar_front_bump"
+	"$normalmapalphaenvmapmask" "1"
+}

@@ -1,0 +1,5 @@
+"VertexlitGeneric"
+{
+	"$basetexture" "models/emod/emod_resistor"
+	"$surfaceprop" "Tile"
+}

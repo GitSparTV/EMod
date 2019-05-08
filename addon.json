@@ -1,0 +1,11 @@
+{
+	"title"		:	"EMod",
+	"type"		:	"tool",
+	"tags"		:	[ "realism", "build" ],
+	"ignore"	:
+	[
+		".git*",
+		"README.md",
+		"LICENSE"
+	]
+}
