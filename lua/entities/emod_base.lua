@@ -4,35 +4,49 @@ ENT.Category = "EMod"
 ENT.Spawnable = true
 ENT.PrintName = "EMod Base"
 ENT.Author = "Spar"
-ENT.Contact = "developspartv@gmail.com"
-ENT.Purpose = "EMod Base SENT"
-ENT.Instructions = "Used as base for EMod Addon"
+ENT.Contact = "https://github.com/GitSparTV/EMod"
 
 ENT.EMODable = true
+ENT.EMod = {
+	Temperature = EMODTemp,
+	Pins = {},
+	Scheme = {},
+	CurrentCallbacks = {}
+}
 
-local Tick = CreateConVar("emod_tickrate",0.1,{FCVAR_NOTIFY},"Set electricity tickrate. Chosen value represents when next time EMod stuff will process. Alike current speed. Used against server overload. Use number (0 > x). 1 is one second.")
-EMODTick = Tick:GetFloat()
-cvars.AddChangeCallback("emod_tickrate",function()
-	EMODTick = Tick:GetFloat()
-end)
+function ENT:SetTemperature(temp)
+	self.EMod.Temperature = temp
+end
+
+function ENT:GetTemperature(temp)
+	return self.EMod.Temperature
+end
+
+function ENT:AddPin(name,posOnModel) return table.insert(self.EMod.Pins,EMod.Pin(name,posOnModel)) end
+function ENT:AddScheme(pinNum,...) self.EMod.Scheme[pinNum] = EMod.SealScheme(...) end
 
 if SERVER then
 
+function ENT:EModSetup()
+	self:SetTemperature(EMODTemp)
+	self:AddPin("PIN_1")
+	self:AddPin("PIN_2")
+	self:AddScheme(1,EMod.Scheme(2))
+	self:AddScheme(2,EMod.Scheme(1))
+end
+
 function ENT:Initialize()
-	self:SetModel("models/props_lab/reciever01b.mdl")
-	self:PhysicsInit(SOLID_VPHYSICS)
-	self:SetMoveType(MOVETYPE_VPHYSICS)
-	self:SetSolid(SOLID_VPHYSICS)
+	self:SetModel("models/props_lab/tpplug.mdl")
+
+	self:PhysicsInit( SOLID_VPHYSICS )
+	self:SetMoveType( MOVETYPE_VPHYSICS )
+	self:SetSolid( SOLID_VPHYSICS )
 	self:PhysWake()
 
-	self.Temperature = 25.0
-	self.EModOutputs = {{name="PIN_1",pinPos=Vector()},{name="PIN_2",pinPos=Vector()}}
-	self.EModScheme = {
-		[1]={[2]={}},
-		[2]={[1]={}},
-	}
-	self.CurrentCallbacks = {}
+	self:EModSetup()
 end
+
+function ENT:EModSettings(settings) end
 
 function ENT:MakeTick(edata)
 	-- if not istable(self.EModCharge) then return end
@@ -45,7 +59,7 @@ end
 
 function ENT:IsGround(id)
 	if not istable(self.EModOutputs[id]) then return end
-	return self.EModOutputs[id].name == "ZERO"
+	return self.EModOutputs[id].name == EMod.Zero
 end
 
 function ENT:FlowScheme(pin,edata)

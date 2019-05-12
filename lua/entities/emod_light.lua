@@ -1,10 +1,6 @@
 AddCSLuaFile()
 DEFINE_BASECLASS("emod_base")
-ENT.Category = "EMod"
-ENT.Spawnable = true
 ENT.PrintName = "EMod Office Light 1"
-
-ENT.EMODable = true
 
 if SERVER then
 	function ENT:Initialize()

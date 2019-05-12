@@ -2,6 +2,7 @@ TOOL.Category = "EMod Tools"
 TOOL.Name = "E-Wire"
 TOOL.Tab = "EMod"
 
+TOOL.ClientConVar[ "wiremils" ] = "0"
 
 local List = {
 	"models/emod/cable_copper",
@@ -9,89 +10,67 @@ local List = {
 	"cable/cable2"
 }
 
-local PLY = FindMetaTable("Player")
--- function PLY:GetToolObject()
--- 	local activeWep = self:GetActiveWeapon()
--- 	if not IsValid(activeWep) or activeWep:GetClass() ~= "gmod_tool" then end
+if CLIENT then
+	TOOL.Information = {
+		{ name = "left", stage = 0 },
+		{ name = "left_1", stage = 1 },
+		{ name = "right", stage = 0 },
+		{ name = "right", stage = 1 },
+		{ name = "reload", stage = 0 },
+		{ name = "reload_1", stage = 1 }
+	}
 
--- 	return GetConVar("gmod_toolmode"):GetString()
+	language.Add("tool.emod_wire.name","E-Wire")
+	language.Add("tool.emod_wire.desc","Wires E-Components")
+	language.Add("tool.emod_wire_wiremils","Wire cross section:")
+	language.Add("tool.emod_wire_wiremils.help","Snapped by every 0.25.\nMeasuring unit: squared mm")
+
+	language.Add("tool.emod_wire.left","Start wiring selected pin")
+	language.Add("tool.emod_wire.left_1","Wire to selected pin")
+	language.Add("tool.emod_wire.right","Select next pin")
+	language.Add("tool.emod_wire.reload","Remove wire from selected pin")
+	language.Add("tool.emod_wire.reload_1","Stop wiring")
+end
+
+-- local function CreateNode(trace,self)
+-- 	local node = ents.Create("emod_wire_node")
+-- 	node:Spawn()
+-- 	local ang = trace.HitNormal:Angle()
+-- 	ang.pitch = ang.pitch + 90
+-- 	local min = node:OBBMins()
+-- 	node:SetPos( trace.HitPos - trace.HitNormal * min.z )
+-- 	node:SetAngles( ang )
+-- 	node:SetPlayer(self:GetOwner())
+
+-- 	constraint.Weld(node,trace.Entity,0,trace.PhysicsBone,0,1,true)
+-- 	DoPropSpawnedEffect(node)
+-- 	local physobj = node:GetPhysicsObject()
+-- 	if IsValid(physobj) then
+-- 		physobj:EnableMotion(false)
+-- 		self:GetOwner():AddFrozenPhysicsObject(node,physobj)
+-- 	end
+
+-- 	undo.Create( "emod_wire_node" )
+-- 		undo.AddEntity(node)
+-- 		undo.SetPlayer(self:GetOwner())
+-- 	undo.Finish()
+
+-- 	return node
 -- end
 
-local function CreateNode(trace,self)
-	local node = ents.Create("emod_wire_node")
-	node:Spawn()
-	local ang = trace.HitNormal:Angle()
-	ang.pitch = ang.pitch + 90
-	local min = node:OBBMins()
-	node:SetPos( trace.HitPos - trace.HitNormal * min.z )
-	node:SetAngles( ang )
-	node:SetPlayer(self:GetOwner())
+-- function EModIsConnected(who,to)
+-- 	if not who.EMODable then return false end 
+-- 	for k,v in pairs(who.ConnectedTo) do
+-- 		if v.to == to then return true end
+-- 	end
+-- 	return false
+-- end 
 
-	constraint.Weld(node,trace.Entity,0,trace.PhysicsBone,0,1,true)
-	DoPropSpawnedEffect(node)
-	local physobj = node:GetPhysicsObject()
-	if IsValid(physobj) then
-		physobj:EnableMotion(false)
-		self:GetOwner():AddFrozenPhysicsObject(node,physobj)
-	end
+-- 	TOOL.SelectedOut = 1
+-- 	TOOL.WireInfo = {}
+-- 	TOOL.Chatter = 0
 
-	undo.Create( "emod_wire_node" )
-		undo.AddEntity(node)
-		undo.SetPlayer(self:GetOwner())
-	undo.Finish()
-
-	return node
-end
-
-function EModIsConnected(who,to)
-	if not who.EMODable then return false end 
-	for k,v in pairs(who.ConnectedTo) do
-		if v.to == to then return true end
-	end
-	return false
-end 
-
-
-if CLIENT then
-
-	TOOL.SelectedOut = 1
-	TOOL.WireInfo = {}
-	TOOL.Chatter = 0
-
-	TOOL.ClientConVar = {
-		length="1", 
-		color_r="0",
-		color_g="0",
-		color_b="0",
-		lastnode="0",
-		ropematerial="models/emod/cable_copper",
-		fitto="0"
-	}
-	TOOL.LastMessage = CurTime()
-	language.Add("tool.emod_wire.name","E-Wire")
-	language.Add("tool.emod_wire.desc","Connects EMod Elements")
-
-	language.Add("tool.emod_wire.0","Hold ALT and scroll to select wire length")
-	language.Add("tool.emod_wire.1","Hold ALT and scroll to select wire length")
-
-	language.Add("tool.emod_wire.left","Select output (SHIFT: Create Node)")
-	language.Add("tool.emod_wire.right","Next output")
-
-	language.Add("tool.emod_wire.left_select","Select second object")
-	language.Add("tool.emod_wire.right_select","Next output")
-
-	language.Add("tool.emod_wire.auto","Fit wire to distance")
-	language.Add("tool.emod_wire.auto.help","If checked, length of wire will be automatically fit to distance between them")
-	language.Add("Undone_emod_wire_node","Undone Wire Node")
-
-	TOOL.Information = {
-		{ name = "info"},
-		{ name = "left", stage = 0},
-		{ name = "right", stage = 0},
-		{ name = "left_select", stage = 1 },
-		{ name = "right_select", stage = 1 },
-	}
-end
+-- end
 
 if SERVER then
 	local function CreateWire(ent1,ent2,out1,out2,fitto,length,material)
@@ -221,112 +200,112 @@ function TOOL:Reload(trace)
 end
 
 function TOOL:Holster()
-	self:SetStage(0)
-	self:ClearObjects()
-	if CLIENT then
-		self.WireInfo = {}
-		GetConVar("emod_wire_lastnode"):SetFloat(0)
-		self.LastNode = nil
-	end
+	-- self:SetStage(0)
+	-- self:ClearObjects()
+	-- if CLIENT then
+	-- 	self.WireInfo = {}
+	-- 	GetConVar("emod_wire_lastnode"):SetFloat(0)
+	-- 	self.LastNode = nil
+	-- end
 end
 
 function TOOL:DrawHUD()
-	local trace = self:GetOwner():GetEyeTrace()
-	self:VisualLimits(trace)
+	-- local trace = self:GetOwner():GetEyeTrace()
+	-- self:VisualLimits(trace)
 end
 
 function TOOL:VisualLimits(trace)
-	if IsValid(trace.Entity) and trace.Entity.EMODable then
-			local outputs = self:GetOutputs(trace.Entity)
-			if outputs and IsValid(outputs[self.SelectedOut].to) and outputs[self.SelectedOut].to.EMODable then
-				local outputs2 = self:GetOutputs(outputs[self.SelectedOut].to)
-				if outputs2 then
-					local pin1,pin2 = outputs[self.SelectedOut].pinPos,outputs2[outputs[self.SelectedOut].to_pin].pinPos
-					cam.Start3D()
-						render.DrawLine(trace.Entity:LocalToWorld(pin1),outputs[self.SelectedOut].to:LocalToWorld(pin2),Color(0,255,0,math.abs(math.sin(CurTime()*2)*255)),false)
-					cam.End3D()
-				end
-			end
-	end
-	if IsValid(self.WireInfo.ent1) then
-		local pos = self.WireInfo.ent1:GetPos()
-		local len = (self:GetClientNumber("fitto") and 500 or self:GetClientNumber("length",100))
-		local BoxX,BoxY,BoxZ = pos.x-len,pos.y-len,pos.z-len
-		-- if self:GetStage() == 1 and IsValid(self.WireInfo.ent1) and self.WireInfo.ent1 != trace.Entity then
-		-- 	local E = util.TraceLine({start=self.WireInfo.ent1:GetPos(),endpos=trace.Entity:GetPos(),filter={self.WireInfo.ent1}}).Entity
-		-- 	if IsValid(E) then
-		-- 		local EN = E:GetPos()
-		-- 		BoxX,BoxY,BoxZ = EN.x-len,EN.y-len,EN.z-len
-		-- 	end
-		-- end
-		local DeltaX,DeltaY,DeltaZ = len*2,len*2,len*2
-		local plypos = trace.HitPos
-		local BoxColor,LineColor = Color(0,100,0,10),Color(0,100,0,200) 
-		if pos:Distance(plypos) > len then BoxColor,LineColor = Color(200,0,0,10),Color(200,0,0,200) end
-		cam.Start3D()
-			render.SetColorMaterial()
-			render.DrawBox(Vector(BoxX,BoxY,BoxZ),Angle(0,0,0),Vector(0,0,0),Vector(DeltaX,DeltaY,DeltaZ),BoxColor,true)
-			render.DrawBox(Vector(BoxX+DeltaX,BoxY,BoxZ),Angle(0,0,0),Vector(0,0,0),Vector(-DeltaX,DeltaY,DeltaZ),BoxColor,true)
+	-- if IsValid(trace.Entity) and trace.Entity.EMODable then
+	-- 		local outputs = self:GetOutputs(trace.Entity)
+	-- 		if outputs and IsValid(outputs[self.SelectedOut].to) and outputs[self.SelectedOut].to.EMODable then
+	-- 			local outputs2 = self:GetOutputs(outputs[self.SelectedOut].to)
+	-- 			if outputs2 then
+	-- 				local pin1,pin2 = outputs[self.SelectedOut].pinPos,outputs2[outputs[self.SelectedOut].to_pin].pinPos
+	-- 				cam.Start3D()
+	-- 					render.DrawLine(trace.Entity:LocalToWorld(pin1),outputs[self.SelectedOut].to:LocalToWorld(pin2),Color(0,255,0,math.abs(math.sin(CurTime()*2)*255)),false)
+	-- 				cam.End3D()
+	-- 			end
+	-- 		end
+	-- end
+	-- if IsValid(self.WireInfo.ent1) then
+	-- 	local pos = self.WireInfo.ent1:GetPos()
+	-- 	local len = (self:GetClientNumber("fitto") and 500 or self:GetClientNumber("length",100))
+	-- 	local BoxX,BoxY,BoxZ = pos.x-len,pos.y-len,pos.z-len
+	-- 	-- if self:GetStage() == 1 and IsValid(self.WireInfo.ent1) and self.WireInfo.ent1 != trace.Entity then
+	-- 	-- 	local E = util.TraceLine({start=self.WireInfo.ent1:GetPos(),endpos=trace.Entity:GetPos(),filter={self.WireInfo.ent1}}).Entity
+	-- 	-- 	if IsValid(E) then
+	-- 	-- 		local EN = E:GetPos()
+	-- 	-- 		BoxX,BoxY,BoxZ = EN.x-len,EN.y-len,EN.z-len
+	-- 	-- 	end
+	-- 	-- end
+	-- 	local DeltaX,DeltaY,DeltaZ = len*2,len*2,len*2
+	-- 	local plypos = trace.HitPos
+	-- 	local BoxColor,LineColor = Color(0,100,0,10),Color(0,100,0,200) 
+	-- 	if pos:Distance(plypos) > len then BoxColor,LineColor = Color(200,0,0,10),Color(200,0,0,200) end
+	-- 	cam.Start3D()
+	-- 		render.SetColorMaterial()
+	-- 		render.DrawBox(Vector(BoxX,BoxY,BoxZ),Angle(0,0,0),Vector(0,0,0),Vector(DeltaX,DeltaY,DeltaZ),BoxColor,true)
+	-- 		render.DrawBox(Vector(BoxX+DeltaX,BoxY,BoxZ),Angle(0,0,0),Vector(0,0,0),Vector(-DeltaX,DeltaY,DeltaZ),BoxColor,true)
 
-			render.DrawLine(Vector(BoxX,BoxY,BoxZ),Vector(BoxX+DeltaX,BoxY,BoxZ),LineColor,true)
-			render.DrawLine(Vector(BoxX,BoxY,BoxZ),Vector(BoxX,BoxY+DeltaY,BoxZ),LineColor,true)
-			render.DrawLine(Vector(BoxX,BoxY,BoxZ),Vector(BoxX,BoxY,BoxZ+DeltaZ),LineColor,true)
+	-- 		render.DrawLine(Vector(BoxX,BoxY,BoxZ),Vector(BoxX+DeltaX,BoxY,BoxZ),LineColor,true)
+	-- 		render.DrawLine(Vector(BoxX,BoxY,BoxZ),Vector(BoxX,BoxY+DeltaY,BoxZ),LineColor,true)
+	-- 		render.DrawLine(Vector(BoxX,BoxY,BoxZ),Vector(BoxX,BoxY,BoxZ+DeltaZ),LineColor,true)
 
-			render.DrawLine(Vector(BoxX+DeltaX,BoxY,BoxZ),Vector(BoxX+DeltaX,BoxY+DeltaY,BoxZ),LineColor,true)
-			render.DrawLine(Vector(BoxX+DeltaX,BoxY,BoxZ),Vector(BoxX+DeltaX,BoxY,BoxZ+DeltaZ),LineColor,true)
+	-- 		render.DrawLine(Vector(BoxX+DeltaX,BoxY,BoxZ),Vector(BoxX+DeltaX,BoxY+DeltaY,BoxZ),LineColor,true)
+	-- 		render.DrawLine(Vector(BoxX+DeltaX,BoxY,BoxZ),Vector(BoxX+DeltaX,BoxY,BoxZ+DeltaZ),LineColor,true)
 
-			render.DrawLine(Vector(BoxX,BoxY+DeltaY,BoxZ),Vector(BoxX+DeltaX,BoxY+DeltaY,BoxZ),LineColor,true)
-			render.DrawLine(Vector(BoxX,BoxY+DeltaY,BoxZ),Vector(BoxX,BoxY+DeltaY,BoxZ+DeltaZ),LineColor,true)
+	-- 		render.DrawLine(Vector(BoxX,BoxY+DeltaY,BoxZ),Vector(BoxX+DeltaX,BoxY+DeltaY,BoxZ),LineColor,true)
+	-- 		render.DrawLine(Vector(BoxX,BoxY+DeltaY,BoxZ),Vector(BoxX,BoxY+DeltaY,BoxZ+DeltaZ),LineColor,true)
 
-			render.DrawLine(Vector(BoxX,BoxY,BoxZ+DeltaZ),Vector(BoxX+DeltaX,BoxY,BoxZ+DeltaZ),LineColor,true)
-			render.DrawLine(Vector(BoxX,BoxY,BoxZ+DeltaZ),Vector(BoxX,BoxY+DeltaY,BoxZ+DeltaZ),LineColor,true)
+	-- 		render.DrawLine(Vector(BoxX,BoxY,BoxZ+DeltaZ),Vector(BoxX+DeltaX,BoxY,BoxZ+DeltaZ),LineColor,true)
+	-- 		render.DrawLine(Vector(BoxX,BoxY,BoxZ+DeltaZ),Vector(BoxX,BoxY+DeltaY,BoxZ+DeltaZ),LineColor,true)
 
-			render.DrawLine(Vector(BoxX+DeltaX,BoxY+DeltaY,BoxZ+DeltaZ),Vector(BoxX,BoxY+DeltaY,BoxZ+DeltaZ),LineColor,true)
-			render.DrawLine(Vector(BoxX+DeltaX,BoxY+DeltaY,BoxZ+DeltaZ),Vector(BoxX+DeltaX,BoxY,BoxZ+DeltaZ),LineColor,true)
-			render.DrawLine(Vector(BoxX+DeltaX,BoxY+DeltaY,BoxZ+DeltaZ),Vector(BoxX+DeltaX,BoxY+DeltaY,BoxZ),LineColor,true)
+	-- 		render.DrawLine(Vector(BoxX+DeltaX,BoxY+DeltaY,BoxZ+DeltaZ),Vector(BoxX,BoxY+DeltaY,BoxZ+DeltaZ),LineColor,true)
+	-- 		render.DrawLine(Vector(BoxX+DeltaX,BoxY+DeltaY,BoxZ+DeltaZ),Vector(BoxX+DeltaX,BoxY,BoxZ+DeltaZ),LineColor,true)
+	-- 		render.DrawLine(Vector(BoxX+DeltaX,BoxY+DeltaY,BoxZ+DeltaZ),Vector(BoxX+DeltaX,BoxY+DeltaY,BoxZ),LineColor,true)
 
-		cam.End3D()
+	-- 	cam.End3D()
 
-	end
+	-- end
 end
 
 function TOOL:DrawToolScreen(w,t)
-	draw.RoundedBox(4,0,0,w,t,Color(238,238,238))
-	local trace = self:GetOwner():GetEyeTrace()
-	local val = self:GetClientNumber("fitto") == 1 and "Auto" or self:GetClientNumber("length",100)
-	draw.SimpleText("Wire Length: "..tostring(val),"DermaLarge",w/2,t*0.1,Color(20,20,20),TEXT_ALIGN_CENTER,TEXT_ALIGN_CENTER)
-	draw.SimpleText(self.SelectedOut,"DermaLarge",w/2,t*0.2,Color(20,20,20),TEXT_ALIGN_CENTER,TEXT_ALIGN_CENTER)
+	-- draw.RoundedBox(4,0,0,w,t,Color(238,238,238))
+	-- local trace = self:GetOwner():GetEyeTrace()
+	-- local val = self:GetClientNumber("fitto") == 1 and "Auto" or self:GetClientNumber("length",100)
+	-- draw.SimpleText("Wire Length: "..tostring(val),"DermaLarge",w/2,t*0.1,Color(20,20,20),TEXT_ALIGN_CENTER,TEXT_ALIGN_CENTER)
+	-- draw.SimpleText(self.SelectedOut,"DermaLarge",w/2,t*0.2,Color(20,20,20),TEXT_ALIGN_CENTER,TEXT_ALIGN_CENTER)
 
-	if trace.Entity.EMODable then
-		local outputs = self:GetOutputs(trace.Entity)
-		draw.RoundedBox(4,w*0.05,t*0.25,w*0.9,t*0.7,Color(204,204,204))
+	-- if trace.Entity.EMODable then
+	-- 	local outputs = self:GetOutputs(trace.Entity)
+	-- 	draw.RoundedBox(4,w*0.05,t*0.25,w*0.9,t*0.7,Color(204,204,204))
 
-		if self:GetStage() == 1 and IsValid(self.WireInfo.ent1) and self.WireInfo.ent1 != trace.Entity then
-			-- if not  then
-				-- draw.SimpleText("Intersection","DermaLarge",w/2,t*0.25+(t*0.7)/2,Color(20,20,20),TEXT_ALIGN_CENTER,TEXT_ALIGN_CENTER)
-				-- return
-			-- end
-		end
-		if not outputs then
-			draw.RoundedBox(8,w*0.3-15,t*0.6-15,30,30,Color(102+102*math.abs(math.sin(CurTime()*2)),102+102*math.abs(math.sin(CurTime()*2)),102+102*math.abs(math.sin(CurTime()*2))))
-			draw.RoundedBox(8,w*0.5-15,t*0.6-15,30,30,Color(102+102*math.abs(math.sin(CurTime()*2+math.pi/3)),102+102*math.abs(math.sin(CurTime()*2+math.pi/3)),102+102*math.abs(math.sin(CurTime()*2+math.pi/3))))
-			draw.RoundedBox(8,w*0.7-15,t*0.6-15,30,30,Color(102+102*math.abs(math.sin(CurTime()*2+math.pi/2)),102+102*math.abs(math.sin(CurTime()*2+math.pi/2)),102+102*math.abs(math.sin(CurTime()*2+math.pi/2))))
-			return
-		end
+	-- 	if self:GetStage() == 1 and IsValid(self.WireInfo.ent1) and self.WireInfo.ent1 != trace.Entity then
+	-- 		-- if not  then
+	-- 			-- draw.SimpleText("Intersection","DermaLarge",w/2,t*0.25+(t*0.7)/2,Color(20,20,20),TEXT_ALIGN_CENTER,TEXT_ALIGN_CENTER)
+	-- 			-- return
+	-- 		-- end
+	-- 	end
+	-- 	if not outputs then
+	-- 		draw.RoundedBox(8,w*0.3-15,t*0.6-15,30,30,Color(102+102*math.abs(math.sin(CurTime()*2)),102+102*math.abs(math.sin(CurTime()*2)),102+102*math.abs(math.sin(CurTime()*2))))
+	-- 		draw.RoundedBox(8,w*0.5-15,t*0.6-15,30,30,Color(102+102*math.abs(math.sin(CurTime()*2+math.pi/3)),102+102*math.abs(math.sin(CurTime()*2+math.pi/3)),102+102*math.abs(math.sin(CurTime()*2+math.pi/3))))
+	-- 		draw.RoundedBox(8,w*0.7-15,t*0.6-15,30,30,Color(102+102*math.abs(math.sin(CurTime()*2+math.pi/2)),102+102*math.abs(math.sin(CurTime()*2+math.pi/2)),102+102*math.abs(math.sin(CurTime()*2+math.pi/2))))
+	-- 		return
+	-- 	end
 
 
-		local out_x,out_y,out_w,out_t = w*0.05,t*0.25,w*0.9,t*0.7
-		local keys = {}
-		for k,v in pairs(outputs) do
-			keys[v.name] = table.Count(keys)
-		end
-		if self.SelectedOut > table.Count(keys) then self.SelectedOut = 1 end
+	-- 	local out_x,out_y,out_w,out_t = w*0.05,t*0.25,w*0.9,t*0.7
+	-- 	local keys = {}
+	-- 	for k,v in pairs(outputs) do
+	-- 		keys[v.name] = table.Count(keys)
+	-- 	end
+	-- 	if self.SelectedOut > table.Count(keys) then self.SelectedOut = 1 end
 
-		for k,INFO in pairs(outputs) do
-			draw.RoundedBox(4,out_x+5,out_y+5+keys[INFO.name]*35,out_w-10,30,self.SelectedOut == k and Color(84,84,184) or Color(184,184,184))
-			draw.SimpleText(INFO.name,"DermaLarge",out_x+5+(out_w-10)/2,out_y+7+25/2+keys[INFO.name]*35,INFO.to != nil and Color(246,45,45) or (self.SelectedOut == k and Color(200,200,255) or Color(100,100,100)),TEXT_ALIGN_CENTER,TEXT_ALIGN_CENTER)
-		end
-	else self.SelectedOut = 1 end
+	-- 	for k,INFO in pairs(outputs) do
+	-- 		draw.RoundedBox(4,out_x+5,out_y+5+keys[INFO.name]*35,out_w-10,30,self.SelectedOut == k and Color(84,84,184) or Color(184,184,184))
+	-- 		draw.SimpleText(INFO.name,"DermaLarge",out_x+5+(out_w-10)/2,out_y+7+25/2+keys[INFO.name]*35,INFO.to != nil and Color(246,45,45) or (self.SelectedOut == k and Color(200,200,255) or Color(100,100,100)),TEXT_ALIGN_CENTER,TEXT_ALIGN_CENTER)
+	-- 	end
+	-- else self.SelectedOut = 1 end
 end
 
 
@@ -385,10 +364,44 @@ if CLIENT then
 	end
 end
 
+local ConVarsDefault = TOOL:BuildConVarList()
+
 function TOOL.BuildCPanel( CPanel )
 	CPanel:AddControl( "Header", { Description = "#tool.emod_wire.desc" } )
 
+	CPanel:AddControl( "ComboBox", { MenuButton = 1, Folder = "emod_wire", Options = { [ "#preset.default" ] = ConVarsDefault }, CVars = table.GetKeys( ConVarsDefault ) } )
+
+
+	local slider = CPanel:AddControl( "Slider", { Label = "#tool.emod_wire_wiremils", Command = "emod_wire_wiremils", Type = "Float", Min = 0.5, Max = 10, Help = true } )
+	local maxI = CPanel:AddControl("Label",{Text="Max Current:"})
+	local maxP = CPanel:AddControl("Label",{Text="Max Power:"})
+
+	function slider:OnValueChanged(val)
+		local add = val % 0.25
+		if add != 0 then return end
+		val = val or (val + 0.25 - add)
+		maxI:SetText("Max Current: "..math.Round(val * 6.1,2).." A")
+		maxP:SetText("Max Power: "..(math.Round(val * 6.1,2)*220).." W")
+	end
+
+	function CPanel:Think()
+		self.animSlide:Run()
+		if not slider:IsEditing() then
+			local val = slider:GetValue()
+			local add = val % 0.25
+			if add == 0 then return end
+			slider:SetValue(val + 0.25 - add)
+		end
+	end
+
 	CPanel:MatSelect("emod_wire_ropematerial",List,true,50,80)
 
-	CPanel:AddControl("checkbox",{Label="#tool.emod_wire.auto",Command="emod_wire_fitto",Help=true})
+	-- The 		Relation between Wire Mils and Max Current is not linear. Everyone has tables with some pre-calculated values.
+	-- I don't want to store the table of these values, so I just took one table and calculated what the max current would be relatively to this value on wire mil 1 mm and took their average
+	-- For example, the value in the table: 1.5 mm = 19 A (220V, copper). So I did ( 1 * 19 ) / 1.5 = (maxA on 1 mm)
+	-- For 10 mm = 70 I did ( 1 * 70 ) / 10 = (maxA on 1mm)
+	-- Then I took their average (12 in total) and got the value: (6.1 A) per (1 mm)
+
+
+	-- CPanel:AddControl("checkbox",{Label="#tool.emod_wire.auto",Command="emod_wire_fitto",Help=true})
 end

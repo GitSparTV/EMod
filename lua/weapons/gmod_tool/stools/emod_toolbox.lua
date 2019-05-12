@@ -2,13 +2,6 @@ TOOL.Category = "EMod Tools"
 TOOL.Name = "E-ToolBox"
 TOOL.Tab = "EMod"
 
-TOOL.ClientConVar[ "ropelength" ] = "64"
-TOOL.ClientConVar[ "force" ] = "500"
-TOOL.ClientConVar[ "r" ] = "255"
-TOOL.ClientConVar[ "g" ] = "255"
-TOOL.ClientConVar[ "b" ] = "0"
-TOOL.ClientConVar[ "model" ] = "normal_skin1"
-
 TOOL.Information = {
 	{ name = "left" },
 	{ name = "right" }
@@ -24,85 +17,33 @@ function TOOL:LeftClick(trace)
 	end
 
 	local ply = self:GetOwner()
-	local material = "cable/rope"
-	local r = self:GetClientNumber( "r", 255 )
-	local g = self:GetClientNumber( "g", 0 )
-	local b = self:GetClientNumber( "b", 0 )
-	local model = self:GetClientInfo( "model" )
-	local force = math.Clamp( self:GetClientNumber( "force", 500 ), -1E34, 1E34 )
-	local length = self:GetClientNumber( "ropelength", 64 )
+	-- Get ToolBox Data here --
 
-	local modeltable = list.Get( "BalloonModels" )[ model ]
+	-- if ( !data ) then return false end
 
-	--
-	-- Model is a table index on BalloonModels
-	-- If the model isn't defined then it can't be spawned.
-	--
-	if ( !modeltable ) then return false end
+	-- If HitEntity is the same type then update here --
 
-	--
-	-- The model table can disable colouring for its model
-	--
-	if ( modeltable.nocolor ) then
-		r = 255
-		g = 255
-		b = 255
+	-- CheckLimit here
+
+	-- if ( IsValid( pl ) && !pl:CheckLimit( "balloons" ) ) then return end
+
+	local ent = ents.Create( "emod_light" )
+	if ( !IsValid( ent ) ) then return end
+
+	ent:Spawn()
+	ent:SetPlayer( pl )
+	ent.Player = pl
+
+	if ( IsValid( pl ) ) then
+		pl:AddCount( "emod_highload", ent )
+		pl:AddCleanup( "emod_highload", ent )
 	end
 
-	--
-	-- Clicked on a balloon - modify the force/color/whatever
-	--
-	if	( IsValid( trace.Entity ) && trace.Entity:GetClass() == "gmod_balloon" && trace.Entity.Player == ply ) then
+	local min = ent:OBBMins()
+	ent:SetPos( trace.HitPos - trace.HitNormal * min.z )
 
-		if ( IsValid( trace.Entity:GetPhysicsObject() ) ) then trace.Entity:GetPhysicsObject():Wake() end
-		trace.Entity:SetColor( Color( r, g, b, 255 ) )
-		trace.Entity:SetForce( force )
-		trace.Entity.force = force
-		return true
-
-	end
-
-	--
-	-- Hit the balloon limit, bail
-	--
-	if ( !self:GetSWEP():CheckLimit( "balloons" ) ) then return false end
-
-	local balloon = MakeBalloon( ply, r, g, b, force, { Pos = trace.HitPos, Model = modeltable.model, Skin = modeltable.skin } )
-
-	local CurPos = balloon:GetPos()
-	local NearestPoint = balloon:NearestPoint( CurPos - ( trace.HitNormal * 512 ) )
-	local Offset = CurPos - NearestPoint
-
-	local Pos = trace.HitPos + Offset
-
-	balloon:SetPos( Pos )
-
-	undo.Create( "Balloon" )
-		undo.AddEntity( balloon )
-
-		if ( attach ) then
-
-			-- The real model should have an attachment!
-			local attachpoint = Pos + Vector( 0, 0, 0 )
-
-			local LPos1 = balloon:WorldToLocal( attachpoint )
-			local LPos2 = trace.Entity:WorldToLocal( trace.HitPos )
-
-			if ( IsValid( trace.Entity ) ) then
-
-				local phys = trace.Entity:GetPhysicsObjectNum( trace.PhysicsBone )
-				if ( IsValid( phys ) ) then LPos2 = phys:WorldToLocal( trace.HitPos ) end
-
-			end
-
-			local constraint, rope = constraint.Rope( balloon, trace.Entity, 0, trace.PhysicsBone, LPos1, LPos2, 0, length, 0, 0.5, material, nil )
-
-			undo.AddEntity( rope )
-			undo.AddEntity( constraint )
-			ply:AddCleanup( "balloons", rope )
-			ply:AddCleanup( "balloons", constraint )
-
-		end
+	undo.Create( "ToolBox" )
+		undo.AddEntity( ent )
 
 		undo.SetPlayer( ply )
 	undo.Finish()
@@ -185,44 +126,22 @@ end
 
 function TOOL:Think()
 
-	if ( !IsValid( self.GhostEntity ) || self.GhostEntity.model != self:GetClientInfo( "model" ) ) then
+	-- if ( !IsValid( self.GhostEntity ) || self.GhostEntity.model != self:GetClientInfo( "model" ) ) then
 
-		local modeltable = list.Get( "BalloonModels" )[ self:GetClientInfo( "model" ) ]
-		if ( !modeltable ) then self:ReleaseGhostEntity() return end
+	-- 	local modeltable = list.Get( "BalloonModels" )[ self:GetClientInfo( "model" ) ]
+	-- 	if ( !modeltable ) then self:ReleaseGhostEntity() return end
 
-		self:MakeGhostEntity( modeltable.model, Vector( 0, 0, 0 ), Angle( 0, 0, 0 ) )
-		if ( IsValid( self.GhostEntity ) ) then self.GhostEntity.model = self:GetClientInfo( "model" ) end
+	-- 	self:MakeGhostEntity( modeltable.model, Vector( 0, 0, 0 ), Angle( 0, 0, 0 ) )
+	-- 	if ( IsValid( self.GhostEntity ) ) then self.GhostEntity.model = self:GetClientInfo( "model" ) end
 
-	end
+	-- end
 
-	self:UpdateGhostBalloon( self.GhostEntity, self:GetOwner() )
+	-- self:UpdateGhostBalloon( self.GhostEntity, self:GetOwner() )
 
 end
 
 local ConVarsDefault = TOOL:BuildConVarList()
 
 function TOOL.BuildCPanel( CPanel )
-
 	CPanel:AddControl( "Header", { Description = "#tool.balloon.help" } )
-
-	CPanel:AddControl( "ComboBox", { MenuButton = 1, Folder = "balloon", Options = { [ "#preset.default" ] = ConVarsDefault }, CVars = table.GetKeys( ConVarsDefault ) } )
-
-	CPanel:AddControl( "Slider", { Label = "#tool.balloon.ropelength", Type = "Float", Command = "balloon_ropelength", Min = 5, Max = 1000 } )
-	CPanel:AddControl( "Slider", { Label = "#tool.balloon.force", Type = "Float", Command = "balloon_force", Min = -1000, Max = 2000, Help = true } )
-	CPanel:AddControl( "Color", { Label = "#tool.balloon.color", Red = "balloon_r", Green = "balloon_g", Blue = "balloon_b" } )
-
-	CPanel:AddControl( "PropSelect", { Label = "#tool.balloon.model", ConVar = "balloon_model", Height = 0, ModelsTable = list.Get( "BalloonModels" ) } )
-
 end
-
-list.Set( "BalloonModels", "normal", { model = "models/maxofs2d/balloon_classic.mdl", skin = 0 } )
-list.Set( "BalloonModels", "normal_skin1", { model = "models/maxofs2d/balloon_classic.mdl", skin = 1 } )
-list.Set( "BalloonModels", "normal_skin2", { model = "models/maxofs2d/balloon_classic.mdl", skin = 2 } )
-list.Set( "BalloonModels", "normal_skin3", { model = "models/maxofs2d/balloon_classic.mdl", skin = 3 } )
-
-list.Set( "BalloonModels", "gman", { model = "models/maxofs2d/balloon_gman.mdl", nocolor = true } )
-list.Set( "BalloonModels", "mossman", { model = "models/maxofs2d/balloon_mossman.mdl", nocolor = true } )
-
-list.Set( "BalloonModels", "dog", { model = "models/balloons/balloon_dog.mdl" } )
-list.Set( "BalloonModels", "heart", { model = "models/balloons/balloon_classicheart.mdl" } )
-list.Set( "BalloonModels", "star", { model = "models/balloons/balloon_star.mdl" } )
