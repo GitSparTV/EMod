@@ -6,8 +6,8 @@ ENT.PrintName = "EMod Base"
 ENT.Author = "Spar"
 ENT.Contact = "https://github.com/GitSparTV/EMod"
 ENT.EMODComponent = true
--- include("emod/sv_emod.lua")
 
+-- include("emod/sv_emod.lua")
 if CLIENT then
 	function ENT:GetGUICache()
 		return self.EMod.GUICache
@@ -23,20 +23,27 @@ function ENT:GetTemperature(temp)
 end
 
 function ENT:AddPin(name, posOnModel)
-	return table.insert(self.EMod.Pins, EMod.Pin(name, posOnModel))
+	local num = table.insert(self.EMod.Pins, EMod.Pin(name, posOnModel))
+	self["ElectronOnPin"..num] = function() end
+	return num
 end
 
 function ENT:AddScheme(pinNum, ...)
 	self.EMod.Scheme[pinNum] = EMod.SealScheme(...)
 end
 
-function ENT:GetPins()
-	return self.EMod.Pins
+function ENT:GetPins(pin)
+	if pin then
+		return self.EMod.Pins[pin]
+	else
+		return self.EMod.Pins
+	end
 end
 
 function ENT:GetPinPos(pin)
-	local pins = self.EMod.Pins
-	return pins[pin].pinPos or Vector()
+	local Pin = self.EMod.Pins[pin]
+
+	return Pin.pinPos or Vector()
 end
 
 function ENT:EModInstall()
@@ -59,21 +66,63 @@ function ENT:GetEModInfo()
 	return self.EMod
 end
 
+function ENT:EModSetModel(mdl)
+	if not mdl or not SERVER then return end
+	self:SetModel(mdl)
+	self:PhysicsInit(SOLID_VPHYSICS)
+	self:SetMoveType(MOVETYPE_VPHYSICS)
+	self:SetSolid(SOLID_VPHYSICS)
+	self:PhysWake()
+end
+
 if SERVER then
 	function ENT:Initialize()
-		self:SetModel("models/props_lab/tpplug.mdl")
-		self:PhysicsInit(SOLID_VPHYSICS)
-		self:SetMoveType(MOVETYPE_VPHYSICS)
-		self:SetSolid(SOLID_VPHYSICS)
-		self:PhysWake()
+		self:EModSetModel("models/props_lab/tpplug.mdl")
+		-- self:PhysicsInit(SOLID_VPHYSICS)
+		-- self:SetMoveType(MOVETYPE_VPHYSICS)
+		-- self:SetSolid(SOLID_VPHYSICS)
+		-- self:PhysWake()
 		self:EModInstall()
 		self:EModSetup()
+		EMod.AddEntity(self, EMod.Type.Component)
 	end
 
 	function ENT:EModSetup()
 	end
 
 	function ENT:EModSettings(settings)
+	end
+
+	function ENT:FlowCurrent(pin, electron)
+		self["ElectronOnPin"..pin](self,electron)
+		local scheme = self.EMod.Scheme[pin]
+
+		if not scheme then
+			print("[EMod] Bad scheme in " .. tostring(self) .. " on Pin #" .. pin .. "!")
+
+			return false
+		end
+
+		if #scheme == 0 then
+			print(self, "Electron Stopped at Pin #" .. pin)
+		else
+			print(self, "Electron Is On Pin #" .. pin)
+		end
+
+		for pinOut, SchemeData in ipairs(scheme) do
+			local PinOut = self.EMod.Pins[pinOut]
+
+			if not PinOut.connected then
+				print(self, "Electron Stopped at Pin #" .. pinOut)
+
+				return electron
+			end
+
+			print(self, "Electron Moved To Pin #" .. pinOut)
+			PinOut.wireInfo.entity:FlowCurrent(PinOut.wireInfo.pin, electron)
+		end
+
+		return electron
 	end
 	-- function ENT:MakeTick(edata)
 	-- 	-- if not istable(self.EModCharge) then return end
@@ -258,12 +307,4 @@ else
 	-- 	local color = render.GetLightColor(vec):ToColor()
 	-- 	return math.Clamp(math.floor(0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b), 80, 255)
 	-- end
-end
-
-function tomA(val)
-	return val * 1000
-end
-
-function toA(val)
-	return val / 1000
 end

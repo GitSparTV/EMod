@@ -9,7 +9,7 @@ EMODTemp = GetConVar("emod_defaulttemp"):GetFloat()
 
 hook.Add("PostDrawTranslucentRenderables", "EMod", function(_, __)
 	for k, v in ipairs(EMod.Entities) do
-		if v.type == EMod.Type.Wire then
+		if v.entType == EMod.Type.Wire then
 			local info = v.entity.backReference
 			local mils = v.entity.mils
 			local material = v.entity.material
@@ -36,21 +36,12 @@ local NET_PIN = 3
 local NET_FLOAT = 4
 local NET_STRING = 5
 
-function EMod.Net.ReadPin()
-	return net.ReadUInt(5)
-end
-
-function EMod.Net.AddMethod(id, func)
-	EMod.Net.Methods[id] = func
-end
-
 local function netWire()
 	local ent1, ent2 = net.ReadEntity(), net.ReadEntity()
 	local pin1, pin2 = EMod.Net.ReadPin(), EMod.Net.ReadPin()
 	local wireMil, wireMat = net.ReadFloat(), net.ReadString()
 	if not IsValid(ent1) or not IsValid(ent2) or not ent1:IsEModComponent() or not ent2:IsEModComponent() then return end
-	local ent1Pins, ent2Pins = ent1:GetPins(), ent2:GetPins()
-	local Pin1, Pin2 = ent1Pins[pin1], ent2Pins[pin2]
+	local Pin1, Pin2 = ent1:GetPins(pin1), ent2:GetPins(pin2)
 	if not Pin1 or not Pin2 then return end
 	local wire = EMod.Wire(wireMil, wireMat)
 	EMod.AddEntity(wire, EMod.Type.Wire)
@@ -64,8 +55,7 @@ local function netUnWire()
 	local ent1, ent2 = net.ReadEntity(), net.ReadEntity()
 	local pin1, pin2 = EMod.Net.ReadPin(), EMod.Net.ReadPin()
 	if not IsValid(ent1) or not IsValid(ent2) or not ent1:IsEModComponent() or not ent2:IsEModComponent() then return end
-	local ent1Pins, ent2Pins = ent1:GetPins(), ent2:GetPins()
-	local Pin1, Pin2 = ent1Pins[pin1], ent2Pins[pin2]
+	local Pin1, Pin2 = ent1:GetPins(pin1), ent2:GetPins(pin2)
 	if not Pin1 or not Pin2 then return end
 	local wire = Pin1.wireInfo.wire
 	Pin1.wireInfo = {}

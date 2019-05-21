@@ -1,10 +1,28 @@
 EMod = EMod or {}
+--
 EMod.Components = EMod.Components or {}
 EMod.Entities = EMod.Entities or {}
+--
+EMod.Zero = "ZERO"
+EMod.Plus = "ANODE"
+EMod.Minus = "KATHODE"
+EMod.HighVoltage = 0
+EMod.CommonVoltage = 1
+EMod.LowVoltage = 2
+--
+EMod.ComponentsTypes = {}
+EMod.ComponentsTypes.Source = 0
+EMod.ComponentsTypes.Passive = 1
+EMod.ComponentsTypes.Output = 2
+EMod.ComponentsTypes.Active = 3
+--
 EMod.Net = EMod.Net or {}
 EMod.Net.Methods = EMod.Net.Methods or {}
 EMod.Net.Wire = 1
 EMod.Net.UnWire = 2
+EMod.Type = {}
+EMod.Type.Component = 0
+EMod.Type.Wire = 1
 
 cvars.AddChangeCallback("emod_tickrate", function()
 	EMODTick = Tick:GetFloat()
@@ -51,7 +69,7 @@ function EMod.Pin(name, posOnModel)
 end
 
 function EMod.Scheme(outputsTo, SchemeData)
-	return {outputsTo, SchemeData or {}}
+	return {outputsTo,SchemeData or {}}
 end
 
 function EMod.SealScheme(...)
@@ -59,15 +77,15 @@ function EMod.SealScheme(...)
 	if table.IsEmpty(args) then return {} end
 	local scheme = {}
 
-	for k = 1, #args, 2 do
-		scheme[args[k]] = args[k + 1]
+	for k,v in ipairs(args) do
+		scheme[v[1]] = v[2]
 	end
 
 	return scheme
 end
 
-function EMod.RegisterComponent(ENT, name, category, manualSpawn, author, contact)
-	if not name then
+function EMod.RegisterComponent(ENT, name, type, category, manualSpawn, author, contact)
+	if not ENT or not name or not type then
 		error("] [EMod] Missing argument #1: name (string)")
 	end
 
@@ -76,19 +94,21 @@ function EMod.RegisterComponent(ENT, name, category, manualSpawn, author, contac
 	ENT.Contact = contact
 	ENT.Category = "EMod"
 	ENT.Spawnable = manualSpawn or false
+	ENT.EModComponentType = type
 
 	EMod.Components[ENT.Folder:gsub("entities/", "")] = {
 		Name = name,
+		ComponentType = type,
 		Category = category or "Uncategorized"
 	}
 end
 
-function EMod.AddEntity(object, type)
-	if not object or not type then return end
+function EMod.AddEntity(object, entType)
+	if not object or not entType then return end
 
 	table.insert(EMod.Entities, {
 		entity = object,
-		type = type
+		entType = entType
 	})
 end
 
@@ -102,12 +122,10 @@ function ents.GetEModComponents()
 	return EMod.Entities
 end
 
-EMod.Zero = "ZERO"
-EMod.Plus = "ANODE"
-EMod.Minus = "KATHODE"
-EMod.Type = {}
-EMod.Type.Component = 0
-EMod.Type.Wire = 1
-EMod.HighVoltage = 0
-EMod.CommonVoltage = 1
-EMod.LowVoltage = 2
+function EMod.Net.ReadPin()
+	return net.ReadUInt(5)
+end
+
+function EMod.Net.AddMethod(id, func)
+	EMod.Net.Methods[id] = func
+end

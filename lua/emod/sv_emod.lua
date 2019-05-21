@@ -16,8 +16,7 @@ end)
 function EMod.DoWire(ent1, pin1, ent2, pin2, mils)
 	if not IsValid(ent1) or not pin1 or not IsValid(ent2) or not pin2 or not ent1:IsEModComponent() or not ent2:IsEModComponent() then return false end
 	if ent1 == ent2 and pin1 == pin2 then return false end
-	local ent1Pins, ent2Pins = ent1:GetPins(), ent2:GetPins()
-	local Pin1, Pin2 = ent1Pins[pin1], ent2Pins[pin2]
+	local Pin1, Pin2 = ent1:GetPins(pin1), ent2:GetPins(pin2)
 	if not Pin1 or not Pin2 then return false end
 
 	if Pin1.connected then
@@ -35,18 +34,18 @@ function EMod.DoWire(ent1, pin1, ent2, pin2, mils)
 	Pin1.connected = true
 	Pin2.connected = true
 	EMod.Net.Queue(EMod.Net.Wire, ent1, ent2, pin1, pin2, wire)
+	return true
 end
 
 function EMod.DoUnWire(ent1, pin1)
 	if not IsValid(ent1) or not pin1 or not ent1:IsEModComponent() then return false end
-	local ent1Pins = ent1:GetPins()
-	local Pin1 = ent1Pins[pin1]
+	local Pin1 = ent1:GetPins(pin1)
 	if not Pin1 or not Pin1.connected then return false end
 	local wire = Pin1.wireInfo.wire
 	EMod.RemoveEntity(wire)
 	local ent2 = Pin1.wireInfo.entity
 	local pin2 = Pin1.wireInfo.pin
-	local Pin2 = ent2:GetPins()[pin2]
+	local Pin2 = ent2:GetPins(pin2)
 
 	if not Pin2 then
 		error("] [EMod] ???")
@@ -57,6 +56,7 @@ function EMod.DoUnWire(ent1, pin1)
 	Pin1.connected = false
 	Pin2.connected = false
 	EMod.Net.Queue(EMod.Net.UnWire, ent1, ent2, pin1, pin2)
+	return true
 end
 
 --[[-------------------------------------------------------------------------
@@ -104,10 +104,6 @@ timer.Create("EMod.Net.Queue", 1 / 100, 0, function()
 	end
 end)
 
-function EMod.Net.AddMethod(id, func)
-	EMod.Net.Methods[id] = func
-end
-
 local function netWire(ent1, ent2, pin1, pin2, wireEnt)
 	return {NET_ENT, ent1, NET_ENT, ent2, NET_PIN, pin1, NET_PIN, pin2, NET_FLOAT, wireEnt.mils, NET_STRING, wireEnt.material}
 end
@@ -126,3 +122,30 @@ end
 
 EMod.Net.AddMethod(EMod.Net.Wire, netWire)
 EMod.Net.AddMethod(EMod.Net.UnWire, netUnWire)
+
+--[[-------------------------------------------------------------------------
+EMod Electron
+---------------------------------------------------------------------------]]
+local lasttick = 0
+
+-- Two batteries in a parallel will short themselves not each other, so we just create a electron map for the first and the second battery.
+-- Battery stacking is not supported yet
+hook.Add("Think","EMod.ElectronThink",function()
+	if lasttick > CurTime() then return end
+	lasttick = CurTime() + EMODTick
+	for k,v in pairs(EMod.Entities) do
+		local ent = v.entity
+		if ent.EModComponentType == EMod.ComponentsTypes.Source then
+			local ZERO = ent:GetPins(2)
+			if not ZERO.connected then continue end
+			local electron = {} or EMod.Electron()
+			print("Electron Start")
+			-- Add wire mils affect
+			PrintTable(ZERO.wireInfo.entity:FlowCurrent(ZERO.wireInfo.pin,electron))
+		end
+	end
+end)
+
+hook.Add("EntityRemoved","EMod.EntityRemoved",function(ent)
+	if ent:IsEModComponent() then EMod.RemoveEntity(ent) end
+end)

@@ -114,7 +114,12 @@ function TOOL:RightClick(trace)
 end
 
 function TOOL:Reload(trace)
-	if self:GetStage() == 1 then self:ClearObjects() return false end
+	if self:GetStage() == 1 then
+		self:ClearObjects()
+
+		return false
+	end
+
 	local ent = trace.Entity
 	if not IsValid(ent) or not ent:IsEModComponent() then return false end
 
@@ -168,7 +173,7 @@ function TOOL:DrawHUD()
 	surface.SetDrawColor(150, 150, 150)
 	surface.DrawTexturedRectUV(xc + 10, yc + 10, w - 20, t - 20, 0, 0, ((w - 20) / 1024) * 3, ((t - 20) / 1024) * 3)
 	surface.SetAlphaMultiplier(1)
-	if not self.AnimState or self.AnimClock ~= 1 then return end
+	if not self.AnimState or self.AnimClock != 1 then return end
 	local selectedPin = GUICache.EWireSelected
 
 	for k, v in ipairs(PinInfo) do
@@ -184,8 +189,8 @@ function TOOL:DrawHUD()
 		render.SetScissorRect(xc + 15 + 5 + 20 + 5, yc + 15 + (GUIPinSize + GUIPinOutdent) * (k - 1), xc + w - 30 + 10, yc + 15 + (GUIPinSize + GUIPinOutdent) * (k - 1) + GUIPinSize, true)
 		surface.SetFont("Trebuchet24")
 		local len = surface.GetTextSize(v.name)
-		local scroll = len >= ((w - 30) / 2) and w + ((SysTime() + 2.5 - self.AnimStart) * 100 % (len + (w - 30) * 2) * -1) or -w / 2
-		draw.SimpleText(v.name, "Trebuchet24", scroll + xc + 15 + (w), yc + 16 + (GUIPinSize + GUIPinOutdent) * (k - 1), Color(255, 255, 255, 200), 1)
+		local scroll = len >= (w - 30 - 10 - 25) and w + ((SysTime() + 2.5 - self.AnimStart) * 100 % (len + (w - 30) * 2) * -1) or -w / 2
+		draw.SimpleText(v.name, "Trebuchet24", scroll + xc + 15 + w	, yc + 16 + (GUIPinSize + GUIPinOutdent) * (k - 1), Color(255, 255, 255, 200), 1)
 		render.SetScissorRect(0, 0, 0, 0, false)
 	end
 end

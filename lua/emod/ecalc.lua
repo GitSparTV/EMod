@@ -1,4 +1,5 @@
 ecalc = ecalc or {}
+ecalc.inf = "∞"
 
 -- Current (I) [A]
 -- Power / Resistance
@@ -69,6 +70,12 @@ end
 local SIPrefixes = {{10 ^ 6, "M"}, {10 ^ 3, "k"}, {1, ""}, {10 ^ -3, "m"}, {10 ^ -6, "μ"}}
 
 function ecalc.SI(value, space)
+	if value == math.huge then
+		return ecalc.inf .. (space and " " or "") .. v[2]
+	elseif value == -math.huge then
+		return "-" .. ecalc.inf .. (space and " " or "") .. v[2]
+	end
+
 	for k, v in ipairs(SIPrefixes) do
 		if value >= v[1] then return string.format("%.2f", value / v[1]):gsub("%.0+$", "") .. (space and " " or "") .. v[2] end
 	end

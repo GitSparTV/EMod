@@ -1,4 +1,4 @@
-EMOD_VERSION = "0.3.0"
+EMOD_VERSION = "0.4.0"
 
 if SERVER then
 	include("emod/sh_emod.lua")
